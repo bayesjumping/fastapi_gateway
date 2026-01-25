@@ -1,0 +1,735 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FastAPI to CDK Gateway",
+    "description": "FastAPI application that can be translated to AWS CDK API Gateway",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/todos": {
+      "get": {
+        "tags": [
+          "todos"
+        ],
+        "summary": "List all todos",
+        "description": "Retrieve a list of all todos with optional filtering by completion status and priority",
+        "operationId": "list_todos_api_v1_todos_get",
+        "parameters": [
+          {
+            "name": "completed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by completion status",
+              "title": "Completed"
+            },
+            "description": "Filter by completion status"
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Priority"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by priority level",
+              "title": "Priority"
+            },
+            "description": "Filter by priority level"
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by tags (comma-separated)",
+              "examples": [
+                "shopping,urgent"
+              ],
+              "title": "Tags"
+            },
+            "description": "Filter by tags (comma-separated)"
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of items to skip",
+              "default": 0,
+              "title": "Skip"
+            },
+            "description": "Number of items to skip"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Maximum number of items to return",
+              "default": 100,
+              "title": "Limit"
+            },
+            "description": "Maximum number of items to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of todos with metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "todos"
+        ],
+        "summary": "Create a new todo",
+        "description": "Create a new todo item.\n\n- **title**: Title of the todo (required, 1-200 characters)\n- **description**: Optional detailed description (max 1000 characters)\n- **completed**: Whether the todo is completed (default: false)\n- **priority**: Priority level (default: medium)\n- **tags**: List of tags for categorization (max 10 tags)",
+        "operationId": "create_todo_api_v1_todos_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TodoCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Todo created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "todos"
+        ],
+        "summary": "Delete completed todos",
+        "description": "Delete all completed todos.\n\nReturns the number of todos that were deleted.",
+        "operationId": "delete_completed_todos_api_v1_todos_delete",
+        "responses": {
+          "200": {
+            "description": "Number of deleted todos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "integer"
+                  },
+                  "title": "Response Delete Completed Todos Api V1 Todos Delete"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/todos/{todo_id}": {
+      "get": {
+        "tags": [
+          "todos"
+        ],
+        "summary": "Get a specific todo",
+        "description": "Retrieve a specific todo by its ID.\n\n- **todo_id**: The unique identifier of the todo (must be >= 1)",
+        "operationId": "get_todo_api_v1_todos__todo_id__get",
+        "parameters": [
+          {
+            "name": "todo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The ID of the todo to retrieve",
+              "examples": [
+                1
+              ],
+              "title": "Todo Id"
+            },
+            "description": "The ID of the todo to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Todo found and returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Todo not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "todos"
+        ],
+        "summary": "Update a todo",
+        "description": "Update an existing todo. Only provided fields will be updated.\n\n- **todo_id**: The unique identifier of the todo (must be >= 1)\n- All fields are optional - only provided fields will be updated",
+        "operationId": "update_todo_api_v1_todos__todo_id__put",
+        "parameters": [
+          {
+            "name": "todo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The ID of the todo to update",
+              "title": "Todo Id"
+            },
+            "description": "The ID of the todo to update"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TodoUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Todo updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Todo not found"
+          },
+          "422": {
+            "description": "Validation error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "todos"
+        ],
+        "summary": "Delete a todo",
+        "description": "Delete a todo by its ID.\n\n- **todo_id**: The unique identifier of the todo (must be >= 1)",
+        "operationId": "delete_todo_api_v1_todos__todo_id__delete",
+        "parameters": [
+          {
+            "name": "todo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The ID of the todo to delete",
+              "title": "Todo Id"
+            },
+            "description": "The ID of the todo to delete"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Todo deleted successfully"
+          },
+          "404": {
+            "description": "Todo not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/todos/{todo_id}/toggle": {
+      "patch": {
+        "tags": [
+          "todos"
+        ],
+        "summary": "Toggle todo completion status",
+        "description": "Toggle the completion status of a todo.\n\n- **todo_id**: The unique identifier of the todo (must be >= 1)",
+        "operationId": "toggle_todo_api_v1_todos__todo_id__toggle_patch",
+        "parameters": [
+          {
+            "name": "todo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "The ID of the todo to toggle",
+              "title": "Todo Id"
+            },
+            "description": "The ID of the todo to toggle"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Todo completion status toggled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodoResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Todo not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Root",
+        "description": "Root endpoint with API information.",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health Check",
+        "description": "Health check endpoint.",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Priority": {
+        "type": "string",
+        "enum": [
+          "low",
+          "medium",
+          "high",
+          "urgent"
+        ],
+        "title": "Priority",
+        "description": "Todo priority levels."
+      },
+      "TodoCreate": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "description": "Title of the todo item",
+            "examples": [
+              "Buy groceries"
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Detailed description of the todo",
+            "examples": [
+              "Get milk, eggs, and bread from the store"
+            ]
+          },
+          "completed": {
+            "type": "boolean",
+            "title": "Completed",
+            "description": "Whether the todo is completed",
+            "default": false
+          },
+          "priority": {
+            "$ref": "#/components/schemas/Priority",
+            "description": "Priority level of the todo",
+            "default": "medium"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Tags",
+            "description": "Tags to categorize the todo",
+            "examples": [
+              [
+                "shopping",
+                "urgent"
+              ]
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "TodoCreate",
+        "description": "Model for creating a new todo."
+      },
+      "TodoListResponse": {
+        "properties": {
+          "todos": {
+            "items": {
+              "$ref": "#/components/schemas/TodoResponse"
+            },
+            "type": "array",
+            "title": "Todos",
+            "description": "List of todo items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of todos",
+            "examples": [
+              42
+            ]
+          },
+          "completed": {
+            "type": "integer",
+            "title": "Completed",
+            "description": "Number of completed todos",
+            "examples": [
+              15
+            ]
+          },
+          "pending": {
+            "type": "integer",
+            "title": "Pending",
+            "description": "Number of pending todos",
+            "examples": [
+              27
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "todos",
+          "total",
+          "completed",
+          "pending"
+        ],
+        "title": "TodoListResponse",
+        "description": "Model for list of todos with metadata."
+      },
+      "TodoResponse": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "description": "Title of the todo item",
+            "examples": [
+              "Buy groceries"
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Detailed description of the todo",
+            "examples": [
+              "Get milk, eggs, and bread from the store"
+            ]
+          },
+          "completed": {
+            "type": "boolean",
+            "title": "Completed",
+            "description": "Whether the todo is completed",
+            "default": false
+          },
+          "priority": {
+            "$ref": "#/components/schemas/Priority",
+            "description": "Priority level of the todo",
+            "default": "medium"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Tags",
+            "description": "Tags to categorize the todo",
+            "examples": [
+              [
+                "shopping",
+                "urgent"
+              ]
+            ]
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "Unique identifier for the todo",
+            "examples": [
+              1
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Timestamp when the todo was created"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Timestamp when the todo was last updated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "id"
+        ],
+        "title": "TodoResponse",
+        "description": "Model for todo responses with additional metadata."
+      },
+      "TodoUpdate": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "completed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Priority"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          }
+        },
+        "type": "object",
+        "title": "TodoUpdate",
+        "description": "Model for updating a todo - all fields optional."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
