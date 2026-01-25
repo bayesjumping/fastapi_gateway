@@ -107,8 +107,7 @@ make clean        # Clean virtual environment
 
 ## Documentation
 
-- [Quick Start Guide](QUICKSTART.md) - Get started in 5 minutes
-- [Full Deployment Guide](DEPLOYMENT.md) - Comprehensive documentation
+See [QUICKSTART.md](QUICKSTART.md) for complete setup and deployment instructions.
 
 ## How It Works
 

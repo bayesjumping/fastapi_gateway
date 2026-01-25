@@ -74,24 +74,23 @@ This single command will:
 
 **Total deployment time**: ~3-5 minutes
 
+After deployment completes, retrieve your API URL and Key from the stack outputs:
+
+```bash
+# Get stack outputs
+aws cloudformation describe-stacks \
+  --stack-name FastApiGatewayStack \
+  --query 'Stacks[0].Outputs'
+
+# Get API Key value
+aws apigateway get-api-key \
+  --api-key YOUR_KEY_ID \
+  --include-value \
+  --query 'value' \
+  --output text
+```
+
 ### Step 5: Test Your Deployed API
-
-After deployment, you'll see output like:
-
-```
-========================================
-✅ Deployment Complete!
-========================================
-
-API Gateway URL:
-https://abc123xyz.execute-api.us-east-1.amazonaws.com/prod/
-
-API Key:
-abc123xyz456...
-
-Test your API with:
-curl -H "x-api-key: abc123xyz456..." https://abc123xyz.execute-api.us-east-1.amazonaws.com/prod/health
-```
 
 **Test the API:**
 
@@ -266,18 +265,19 @@ aws logs tail /aws/lambda/FastApiGatewayStack-FastApiHandler --follow
 
 After running the setup, you now have:
 
-### New Files:
-- [`lambda_handler.py`](lambda_handler.py) - Lambda entry point with Mangum
-- [`cdk_app.py`](cdk_app.py) - CDK application entry point
-- [`cdk.json`](cdk.json) - CDK configuration
-- [`setup.sh`](setup.sh) - Quick setup script
-- [`deploy.sh`](deploy.sh) - Deployment script
-- [`destroy.sh`](destroy.sh) - Cleanup script
-- [`DEPLOYMENT.md`](DEPLOYMENT.md) - Comprehensive deployment guide
-- `infrastructure/` - CDK code that generates API Gateway
+### Infrastructure Files:
+- `infra/lambda_handler.py` - Lambda entry point with Mangum
+- `infra/cdk_app.py` - CDK application entry point
+- `infra/cdk_stack.py` - Dynamic CDK stack generator
+- `infra/fastapi_introspector.py` - Route/model introspection
+- `infra/deploy.sh` - Deployment script
+- `infra/destroy.sh` - Cleanup script
+- `infra/generate_openapi.sh` - OpenAPI schema generator
+- `infra/requirements-lambda.txt` - Lambda runtime dependencies
+- `cdk.json` - CDK configuration
 
 ### Modified Files:
-- [`requirements.txt`](requirements.txt) - Added `mangum` for Lambda support
+- `requirements.txt` - Added `mangum` for Lambda support
 
 ### What Runs Where:
 - **Locally**: FastAPI app runs with uvicorn for development
@@ -287,7 +287,7 @@ After running the setup, you now have:
 
 ## 🎓 Next Steps
 
-1. **Customize**: Edit `infrastructure/cdk_stack.py` to adjust Lambda size, timeouts, etc.
+1. **Customize**: Edit `infra/cdk_stack.py` to adjust Lambda size, timeouts, etc.
 2. **Add Storage**: Replace in-memory storage with DynamoDB
 3. **Add Auth**: Implement Cognito or custom authorizers
 4. **Monitor**: Set up CloudWatch dashboards and alarms
@@ -295,11 +295,7 @@ After running the setup, you now have:
 
 ## 📖 Learn More
 
-- [Full Deployment Guide](DEPLOYMENT.md)
 - [AWS CDK Docs](https://docs.aws.amazon.com/cdk/)
 - [API Gateway Docs](https://docs.aws.amazon.com/apigateway/)
 - [FastAPI Docs](https://fastapi.tiangolo.com/)
-
----
-
-**Need help?** Check [DEPLOYMENT.md](DEPLOYMENT.md) for detailed documentation.
+- [Mangum Docs](https://mangum.io/)
