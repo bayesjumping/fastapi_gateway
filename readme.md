@@ -9,7 +9,7 @@ This project allows you to define your API using FastAPI's familiar syntax and a
 ## Project Structure
 
 ```
-fast_api_gateway/
+fastapi_gateway/
 ├── main.py              # FastAPI application entry point
 ├── app/
 │   ├── __init__.py
