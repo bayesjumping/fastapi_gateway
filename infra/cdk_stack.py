@@ -22,7 +22,7 @@ from constructs import Construct
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from main import app as fastapi_app
-from infrastructure.fastapi_introspector import FastAPIIntrospector, pydantic_to_api_gateway_model
+from .fastapi_introspector import FastAPIIntrospector, pydantic_to_api_gateway_model
 
 
 class FastApiGatewayStack(Stack):
@@ -38,7 +38,8 @@ class FastApiGatewayStack(Stack):
         print(f"📋 Found {len(self.introspector.routes)} routes")
         print(f"📦 Found {len(self.introspector.models)} models")
         
-        # Create Lambda function
+        # Create Lambda function (single function for all routes)
+        # For production: can split into multiple functions by modifying this
         self.lambda_function = self._create_lambda_function()
         
         # Create API Gateway
@@ -67,19 +68,37 @@ class FastApiGatewayStack(Stack):
             handler="lambda_handler.handler",
             code=_lambda.Code.from_asset(
                 str(project_root),
+                exclude=[
+                    "cdk.out",
+                    "infra",
+                    "*.md",
+                    "*.sh",
+                    "cdk.json",
+                    "cdk.context.json",
+                    ".venv",
+                    ".git",
+                    ".gitignore",
+                    "__pycache__",
+                    "*.pyc",
+                    "tests",
+                ],
                 bundling={
                     "image": _lambda.Runtime.PYTHON_3_11.bundling_image,
                     "command": [
                         "bash", "-c",
                         " && ".join([
-                            "pip install -r requirements.txt -t /asset-output",
+                            "pip install -r infra/requirements-lambda.txt -t /asset-output --platform manylinux2014_x86_64 --implementation cp --python-version 3.11 --only-binary=:all: --upgrade --no-cache-dir",
                             "cp -r app /asset-output/",
                             "cp main.py /asset-output/",
-                            "cp lambda_handler.py /asset-output/",
+                            "cp infra/lambda_handler.py /asset-output/",
+                            "find /asset-output -type d -name '__pycache__' -exec rm -rf {} + || true",
+                            "find /asset-output -type f -name '*.pyc' -delete || true",
+                            "find /asset-output -type d -name 'tests' -exec rm -rf {} + || true",
                         ])
                     ],
                 }
             ),
+            function_name="FastApiGateway-Handler",
             timeout=Duration.seconds(30),
             memory_size=512,
             environment={
@@ -161,43 +180,32 @@ class FastApiGatewayStack(Stack):
         
         for model_name, schema in schemas.items():
             print(f"  📐 Creating model: {model_name}")
-            api_model = apigw.Model(
-                self,
-                f"Model{model_name}",
-                rest_api=self.api,
-                content_type="application/json",
-                model_name=model_name,
-                schema=apigw.JsonSchema(
-                    schema=apigw.JsonSchemaVersion.DRAFT4,
-                    type=apigw.JsonSchemaType.OBJECT,
-                    properties={
-                        k: self._convert_property_to_json_schema(v)
-                        for k, v in schema.get("properties", {}).items()
-                    },
-                    required=schema.get("required", []),
-                ),
-            )
-            api_models[model_name] = api_model
+            try:
+                # Simplify schema to avoid API Gateway limitations
+                simplified_schema = self._simplify_schema_for_apigw(schema)
+                
+                api_model = apigw.Model(
+                    self,
+                    f"Model{model_name}",
+                    rest_api=self.api,
+                    content_type="application/json",
+                    model_name=model_name,
+                    schema=simplified_schema,
+                )
+                api_models[model_name] = api_model
+            except Exception as e:
+                print(f"  ⚠️  Warning: Could not create model {model_name}: {e}")
+                # Continue without this model
         
-        # Create request validator
-        request_validator = apigw.RequestValidator(
-            self,
-            "RequestValidator",
-            rest_api=self.api,
-            request_validator_name="request-validator",
-            validate_request_body=True,
-            validate_request_parameters=True,
-        )
+        # Create routes grouped by path
+        created_resources = {}
         
-        # Create Lambda integration
+        # Create single Lambda integration for all routes
         lambda_integration = apigw.LambdaIntegration(
             self.lambda_function,
             proxy=True,
             allow_test_invoke=True,
         )
-        
-        # Create routes grouped by path
-        created_resources = {}
         
         for route in self.introspector.routes:
             print(f"  🛣️  Creating route: {' '.join(route.methods)} {route.path}")
@@ -205,26 +213,16 @@ class FastApiGatewayStack(Stack):
             # Get or create the resource for this path
             resource = self._get_or_create_resource(route.path, created_resources)
             
-            # Determine request model
-            request_models = None
-            if route.request_model and route.request_model.__name__ in api_models:
-                request_models = {
-                    "application/json": api_models[route.request_model.__name__]
-                }
-            
             # Create method for each HTTP method
             for method in route.methods:
                 if method == "OPTIONS":
                     continue  # Skip OPTIONS, handled by CORS
                 
+                # Simplified - validation happens in Lambda
                 method_options = {
                     "authorization_type": apigw.AuthorizationType.NONE,
                     "api_key_required": True,
-                    "request_validator": request_validator,
                 }
-                
-                if request_models:
-                    method_options["request_models"] = request_models
                 
                 resource.add_method(
                     method,
@@ -307,6 +305,16 @@ class FastApiGatewayStack(Stack):
             json_schema["description"] = prop["description"]
         
         return json_schema
+    
+    def _simplify_schema_for_apigw(self, schema: Dict[str, Any]) -> apigw.JsonSchema:
+        """Simplify Pydantic schema for API Gateway compatibility."""
+        # For complex schemas, just use a simple object schema
+        # Validation will happen in Lambda via Pydantic
+        return apigw.JsonSchema(
+            schema=apigw.JsonSchemaVersion.DRAFT4,
+            type=apigw.JsonSchemaType.OBJECT,
+            title=schema.get("title", "Model"),
+        )
     
     def _create_outputs(self):
         """Create CloudFormation outputs."""

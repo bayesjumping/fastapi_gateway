@@ -31,6 +31,12 @@ if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
 fi
 
 echo -e "${RED}🗑️  Destroying stack...${NC}"
+
+# Activate virtual environment if it exists
+if [ -d ".venv" ]; then
+    source .venv/bin/activate
+fi
+
 cdk destroy --force
 
 echo ""

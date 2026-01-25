@@ -30,15 +30,37 @@ fi
 # Check AWS credentials (SSO or regular)
 echo -e "${BLUE}🔐 Checking AWS credentials...${NC}"
 if ! aws sts get-caller-identity &> /dev/null; then
-    echo -e "${YELLOW}⚠️  AWS credentials not valid. Attempting SSO login...${NC}"
-    echo -e "${BLUE}🔑 Logging into AWS SSO with profile: $AWS_PROFILE${NC}"
+    echo -e "${YELLOW}⚠️  AWS credentials not valid.${NC}"
     
-    aws sso login --profile $AWS_PROFILE
+    if [ -n "$AWS_PROFILE" ]; then
+        echo -e "${BLUE}🔑 Attempting AWS SSO login with profile: $AWS_PROFILE${NC}"
+        aws sso login --profile $AWS_PROFILE
+    else
+        echo ""
+        echo "❌ No valid AWS credentials found."
+        echo ""
+        echo "Please configure AWS credentials using one of these methods:"
+        echo ""
+        echo "1. Standard credentials:"
+        echo "   aws configure"
+        echo ""
+        echo "2. AWS SSO (set profile first):"
+        echo "   export AWS_PROFILE=your-profile-name"
+        echo "   aws sso login --profile your-profile-name"
+        echo ""
+        echo "3. Use environment variables:"
+        echo "   export AWS_ACCESS_KEY_ID=..."
+        echo "   export AWS_SECRET_ACCESS_KEY=..."
+        echo ""
+        exit 1
+    fi
     
     # Verify credentials again
     if ! aws sts get-caller-identity &> /dev/null; then
-        echo "❌ AWS SSO login failed. Please check your configuration."
-        echo "You may need to run: aws configure sso --profile $AWS_PROFILE"
+        echo "❌ AWS authentication failed. Please check your configuration."
+        if [ -n "$AWS_PROFILE" ]; then
+            echo "You may need to run: aws configure sso --profile $AWS_PROFILE"
+        fi
         exit 1
     fi
 fi

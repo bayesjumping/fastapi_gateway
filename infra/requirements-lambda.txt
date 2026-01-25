@@ -1,0 +1,5 @@
+# Runtime dependencies for Lambda only
+fastapi>=0.115.0
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
+mangum>=0.17.0

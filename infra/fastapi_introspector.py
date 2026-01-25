@@ -93,26 +93,35 @@ class FastAPIIntrospector:
         """Recursively collect response models and their dependencies."""
         if not model or not hasattr(model, '__name__'):
             return
+        
+        # Only process if it's actually a class
+        if not inspect.isclass(model):
+            return
             
         model_name = model.__name__
         if model_name in self.models:
             return
-            
-        if issubclass(model, BaseModel):
-            self.models[model_name] = model
-            
-            # Collect nested models
-            if hasattr(model, 'model_fields'):
-                for field_name, field_info in model.model_fields.items():
-                    field_type = field_info.annotation
-                    if inspect.isclass(field_type) and issubclass(field_type, BaseModel):
-                        self._collect_response_models(field_type)
-                    # Handle List types
-                    elif hasattr(field_type, '__origin__'):
-                        if hasattr(field_type, '__args__'):
-                            for arg in field_type.__args__:
-                                if inspect.isclass(arg) and issubclass(arg, BaseModel):
-                                    self._collect_response_models(arg)
+        
+        # Check if it's a BaseModel subclass
+        try:
+            if issubclass(model, BaseModel):
+                self.models[model_name] = model
+                
+                # Collect nested models
+                if hasattr(model, 'model_fields'):
+                    for field_name, field_info in model.model_fields.items():
+                        field_type = field_info.annotation
+                        if inspect.isclass(field_type) and issubclass(field_type, BaseModel):
+                            self._collect_response_models(field_type)
+                        # Handle List types
+                        elif hasattr(field_type, '__origin__'):
+                            if hasattr(field_type, '__args__'):
+                                for arg in field_type.__args__:
+                                    if inspect.isclass(arg) and issubclass(arg, BaseModel):
+                                        self._collect_response_models(arg)
+        except TypeError:
+            # issubclass raises TypeError for non-class types
+            return
     
     def get_json_schemas(self) -> Dict[str, Dict[str, Any]]:
         """Get JSON schemas for all Pydantic models."""

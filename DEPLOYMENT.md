@@ -20,16 +20,34 @@ This project automatically generates AWS CDK infrastructure code from your FastA
 
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+### 1. Complete Setup
 
 ```bash
-pip install -r requirements.txt
+make setup
 ```
 
-### 2. Deploy to AWS
+This will:
+- Create a virtual environment
+- Install Python dependencies
+- Install AWS CDK CLI globally
+
+### 2. Configure AWS & Bootstrap CDK
 
 ```bash
-./deploy.sh
+# Configure AWS credentials (if not already done)
+aws configure
+
+# Activate virtual environment
+source .venv/bin/activate
+
+# Bootstrap CDK (first time only)
+make bootstrap
+```
+
+### 3. Deploy to AWS
+
+```bash
+make deploy
 ```
 
 This script will:
@@ -39,13 +57,8 @@ This script will:
 - Generate API Gateway resources dynamically
 - Deploy Lambda function with your code
 - Create API Key and Usage Plan
-- Output the API URL and API Key
 
 ### 3. Test Your API
-
-After deployment, you'll receive:
-- **API Gateway URL**
-- **API Key Value**
 
 Test it:
 
@@ -82,11 +95,12 @@ Deployed Infrastructure
 
 ### Key Components
 
-1. **`lambda_handler.py`**: Wraps FastAPI with Mangum for Lambda compatibility
-2. **`infrastructure/fastapi_introspector.py`**: Introspects FastAPI app to extract routes and models
-3. **`infrastructure/cdk_stack.py`**: Generates API Gateway infrastructure dynamically
-4. **`cdk_app.py`**: CDK app entry point
-5. **`deploy.sh`**: Automated deployment script
+1. **`infra/lambda_handler.py`**: Wraps FastAPI with Mangum for Lambda compatibility
+2. **`infra/fastapi_introspector.py`**: Introspects FastAPI app to extract routes and models
+3. **`infra/cdk_stack.py`**: Generates API Gateway infrastructure dynamically
+4. **`infra/cdk_app.py`**: CDK app entry point
+5. **`infra/deploy.sh`**: Automated deployment script
+6. **`infra/requirements-lambda.txt`**: Runtime-only dependencies for Lambda
 
 ### Dynamic Generation Process
 
@@ -104,39 +118,67 @@ At CDK synthesis time (`cdk synth`), the stack:
 ```
 .
 ├── main.py                    # FastAPI application
-├── lambda_handler.py          # Lambda handler (NEW)
-├── cdk_app.py                 # CDK app entry point (NEW)
-├── cdk.json                   # CDK configuration (NEW)
-├── deploy.sh                  # Deployment script (NEW)
-├── destroy.sh                 # Cleanup script (NEW)
-├── requirements.txt           # Python dependencies (updated with mangum)
+├── makefile                   # Build and deployment commands
+├── cdk.json                   # CDK configuration
+├── pytest.ini                 # Test configuration
+├── requirements.txt           # Python dependencies
 ├── app/
 │   ├── models/                # Pydantic models
 │   ├── routers/               # FastAPI routers
 │   ├── services/              # Business logic
 │   └── db/                    # Data layer
-└── infrastructure/            # CDK infrastructure code (NEW)
-    ├── __init__.py
-    ├── fastapi_introspector.py  # FastAPI introspection utilities
-    └── cdk_stack.py              # Dynamic CDK stack generator
+├── tests/                     # Test suite
+│   ├── test_health.py         # Health endpoint tests
+│   ├── test_models.py         # Model validation tests
+│   ├── test_repository.py     # Repository tests
+│   └── test_todos.py          # API endpoint tests
+└── infra/                     # Infrastructure code
+    ├── lambda_handler.py      # Lambda entry point
+    ├── fastapi_introspector.py # Route/model introspection
+    ├── cdk_stack.py           # CDK stack generator
+    ├── cdk_app.py             # CDK app entry point
+    ├── deploy.sh              # Deployment script
+    ├── destroy.sh             # Cleanup script
+    ├── generate_openapi.sh    # OpenAPI schema generator
+    └── requirements-lambda.txt # Lambda runtime dependencies
 ```
 
-## 🔧 CDK Commands
+## 🔧 Make Commands
 
 ```bash
+# Show all available commands
+make help
+
+# Deploy to AWS
+make deploy
+
+# Destroy all resources
+make destroy
+
+# Run tests
+make test
+
+# Run locally
+make run
+
+# Generate OpenAPI schema
+make openapi
+```
+
+### Advanced CDK Commands
+
+```bash
+# Activate virtual environment first
+source .venv/bin/activate
+
 # Synthesize CloudFormation template
 cdk synth
-
-# Deploy the stack
-cdk deploy
 
 # View differences before deployment
 cdk diff
 
-# Destroy all resources
-./destroy.sh
-# or
-cdk destroy
+# Deploy with verbose output
+cdk deploy --verbose
 ```
 
 ## 🔑 API Key Management
@@ -220,10 +262,14 @@ Then redeploy:
 # Check AWS credentials
 aws sts get-caller-identity
 
-# Check CDK bootstrap
-cdk bootstrap
+# Bootstrap CDK if not already done
+make bootstrap
 
-# View detailed logs
+# Try deployment again
+make deploy
+
+# View detailed logs (activate venv first)
+source .venv/bin/activate
 cdk deploy --verbose
 ```
 

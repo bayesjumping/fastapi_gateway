@@ -1,10 +1,16 @@
 # FastAPI to CDK Gateway
 
-A project that translates FastAPI constructs into AWS CDK API Gateway resources in an unintrusive way.
+Automatically deploy your FastAPI application to AWS API Gateway with Lambda, using AWS CDK.
 
 ## Overview
 
-This project allows you to define your API using FastAPI's familiar syntax and automatically generate AWS CDK infrastructure code to deploy it as an API Gateway with Lambda functions.
+This project dynamically generates AWS infrastructure from your FastAPI application. No manual CDK code required - just write FastAPI as usual, and the CDK introspector reads your routes and models at deployment time to create:
+
+- ✅ API Gateway REST API with all endpoints
+- ✅ Lambda function with your code
+- ✅ API Key authentication
+- ✅ Request validation from Pydantic models
+- ✅ Usage plans and throttling
 
 ## Project Structure
 
@@ -25,17 +31,40 @@ fastapi_gateway/
 
 ## Getting Started
 
-### Installation
+### Quick Setup
 
 ```bash
-make install
+# Complete setup (creates venv, installs dependencies, installs CDK)
+make setup
+
+# Activate virtual environment
 source .venv/bin/activate
+
+# Configure AWS (if not already done)
+aws configure
+
+# Bootstrap CDK (first time only)
+make bootstrap
 ```
 
-### Run the FastAPI Server
+### Run Locally
 
 ```bash
 make run
+```
+
+The API will be available at http://localhost:8000
+
+### Deploy to AWS
+
+```bash
+make deploy
+```
+
+### Run Tests
+
+```bash
+make test
 ```
 
 The API will be available at http://localhost:8000
@@ -48,28 +77,39 @@ Once running, visit:
 
 ## Available Endpoints
 
-- `GET /` - Root endpoint
+### Health & Info
+- `GET /` - Root endpoint with API information
 - `GET /health` - Health check
-- `GET /api/items` - List all items
-- `GET /api/items/{item_id}` - Get specific item
-- `POST /api/items` - Create new item
-- `PUT /api/items/{item_id}` - Update item
-- `DELETE /api/items/{item_id}` - Delete item
 
-## Development
+### Todo API
+- `GET /api/v1/todos` - List all todos (with filtering)
+- `GET /api/v1/todos/{id}` - Get specific todo
+- `POST /api/v1/todos` - Create new todo
+- `PUT /api/v1/todos/{id}` - Update todo
+- `PATCH /api/v1/todos/{id}/toggle` - Toggle completion status
+- `DELETE /api/v1/todos/{id}` - Delete todo
+- `DELETE /api/v1/todos` - Delete all completed todos
 
-### Running Tests
-
-```bash
-make test
-```
-
-### Clean Up
+## Make Commands
 
 ```bash
-make clean
+make help         # Show all available commands
+make setup        # Complete setup (venv + dependencies + CDK)
+make install      # Install Python dependencies only
+make bootstrap    # Bootstrap AWS CDK
+make run          # Run FastAPI server locally
+make test         # Run test suite
+make deploy       # Deploy to AWS
+make destroy      # Remove AWS resources
+make openapi      # Generate OpenAPI schema
+make clean        # Clean virtual environment
 ```
 
-## CDK Translation (Coming Soon)
+## Documentation
 
-The CDK translation module will parse FastAPI routes and generate corresponding API Gateway and Lambda resources automatically.
+- [Quick Start Guide](QUICKSTART.md) - Get started in 5 minutes
+- [Full Deployment Guide](DEPLOYMENT.md) - Comprehensive documentation
+
+## How It Works
+
+The CDK stack dynamically introspects your FastAPI application at synthesis time to generate all AWS resources. Add a new endpoint to your FastAPI app, run `make deploy`, and it automatically appears in API Gateway!

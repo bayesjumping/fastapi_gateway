@@ -5,7 +5,7 @@ This script synthesizes and deploys the FastAPI Gateway stack.
 """
 import os
 from aws_cdk import App, Environment
-from infrastructure.cdk_stack import FastApiGatewayStack
+from .cdk_stack import FastApiGatewayStack
 
 app = App()
 

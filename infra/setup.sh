@@ -3,6 +3,9 @@
 echo "🎯 FastAPI to API Gateway - Quick Setup"
 echo "======================================="
 
+# Change to project root
+cd "$(dirname "$0")/.."
+
 # Create virtual environment
 echo "1️⃣  Creating virtual environment..."
 python3 -m venv .venv
@@ -20,7 +23,7 @@ echo ""
 echo "✅ Setup complete!"
 echo ""
 echo "To deploy to AWS:"
-echo "  ./deploy.sh"
+echo "  ./infra/deploy.sh"
 echo ""
 echo "To test locally:"
 echo "  source .venv/bin/activate"

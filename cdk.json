@@ -1,5 +1,5 @@
 {
-  "app": "python3 cdk_app.py",
+  "app": "python3 -m infra.cdk_app",
   "watch": {
     "include": [
       "**"

@@ -21,29 +21,21 @@ Before you begin, ensure you have:
 
 ## Step-by-Step Deployment
 
-### Step 1: Initial Setup
+### Step 1: Complete Setup
 
-Run the setup script to create a virtual environment and install dependencies:
-
-```bash
-./setup.sh
-```
-
-Or manually:
+Run one command to set everything up:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+make setup
 ```
 
-### Step 2: Install AWS CDK CLI
+This will:
+- ✅ Create Python virtual environment
+- ✅ Install all Python dependencies
+- ✅ Install AWS CDK CLI globally
+- ✅ Show you next steps
 
-```bash
-npm install -g aws-cdk
-```
-
-### Step 3: Configure AWS Credentials
+### Step 2: Configure AWS Credentials
 
 If you haven't already:
 
@@ -56,10 +48,20 @@ Enter your:
 - AWS Secret Access Key
 - Default region (e.g., `us-east-1`)
 
+### Step 3: Bootstrap CDK (First Time Only)
+
+```bash
+# Activate virtual environment
+source .venv/bin/activate
+
+# Bootstrap CDK
+make bootstrap
+```
+
 ### Step 4: Deploy to AWS
 
 ```bash
-./deploy.sh
+make deploy
 ```
 
 This single command will:
@@ -150,7 +152,7 @@ async def get_users():
 Then redeploy:
 
 ```bash
-./deploy.sh
+make deploy
 ```
 
 The new endpoint will **automatically** appear in API Gateway!
@@ -206,7 +208,7 @@ aws apigateway get-api-key \
 To remove all AWS resources:
 
 ```bash
-./destroy.sh
+make destroy
 ```
 
 This deletes:
@@ -237,14 +239,14 @@ aws configure
 ### "CDK not bootstrapped"
 
 ```bash
-cdk bootstrap aws://ACCOUNT-ID/REGION
+make bootstrap
 ```
 
 ### "Module not found" errors
 
 ```bash
+make install
 source .venv/bin/activate
-pip install -r requirements.txt
 ```
 
 ### Lambda function errors

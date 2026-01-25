@@ -54,8 +54,8 @@ class TodoRepository:
     @staticmethod
     def delete_completed() -> int:
         """Delete all completed todos and return count."""
-        initial_count = len(todos_db)
         global todos_db
+        initial_count = len(todos_db)
         
         # Create new dict without completed todos
         remaining = {
