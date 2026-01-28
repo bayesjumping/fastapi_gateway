@@ -3,12 +3,10 @@ CDK utilities for introspecting FastAPI applications and generating API Gateway 
 This module dynamically reads the FastAPI app at CDK synthesis time to create API Gateway infrastructure.
 """
 import inspect
-import json
 from typing import Dict, List, Any, Optional, Set
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from pydantic import BaseModel
-from enum import Enum
 
 
 class RouteInfo:
@@ -94,7 +92,6 @@ class FastAPIIntrospector:
         if not model or not hasattr(model, '__name__'):
             return
         
-        # Only process if it's actually a class
         if not inspect.isclass(model):
             return
             
@@ -102,46 +99,59 @@ class FastAPIIntrospector:
         if model_name in self.models:
             return
         
-        # Check if it's a BaseModel subclass
-        try:
-            if issubclass(model, BaseModel):
-                self.models[model_name] = model
-                
-                # Collect nested models
-                if hasattr(model, 'model_fields'):
-                    for field_name, field_info in model.model_fields.items():
-                        field_type = field_info.annotation
-                        if inspect.isclass(field_type) and issubclass(field_type, BaseModel):
-                            self._collect_response_models(field_type)
-                        # Handle List types
-                        elif hasattr(field_type, '__origin__'):
-                            if hasattr(field_type, '__args__'):
-                                for arg in field_type.__args__:
-                                    if inspect.isclass(arg) and issubclass(arg, BaseModel):
-                                        self._collect_response_models(arg)
-        except TypeError:
-            # issubclass raises TypeError for non-class types
+        if not self._is_base_model(model):
             return
+        
+        self.models[model_name] = model
+        self._collect_nested_models(model)
+    
+    def _is_base_model(self, model: type) -> bool:
+        """Check if model is a BaseModel subclass."""
+        try:
+            return issubclass(model, BaseModel)
+        except TypeError:
+            return False
+    
+    def _collect_nested_models(self, model: type):
+        """Collect nested models from model fields."""
+        if not hasattr(model, 'model_fields'):
+            return
+        
+        for field_info in model.model_fields.values():
+            field_type = field_info.annotation
+            self._process_field_type(field_type)
+    
+    def _process_field_type(self, field_type: type):
+        """Process a field type and collect if it's a BaseModel."""
+        if inspect.isclass(field_type) and self._is_base_model(field_type):
+            self._collect_response_models(field_type)
+            return
+        
+        # Handle generic types (List, Optional, etc.)
+        if not hasattr(field_type, '__origin__') or not hasattr(field_type, '__args__'):
+            return
+        
+        for arg in field_type.__args__:
+            if inspect.isclass(arg) and self._is_base_model(arg):
+                self._collect_response_models(arg)
     
     def get_json_schemas(self) -> Dict[str, Dict[str, Any]]:
         """Get JSON schemas for all Pydantic models."""
         schemas = {}
         for model_name, model_class in self.models.items():
-            if hasattr(model_class, 'model_json_schema'):
-                schema = model_class.model_json_schema()
-                # Clean up the schema for API Gateway
-                schemas[model_name] = self._clean_schema(schema)
+            if not hasattr(model_class, 'model_json_schema'):
+                continue
+            
+            schema = model_class.model_json_schema()
+            schemas[model_name] = self._clean_schema(schema)
         return schemas
     
     def _clean_schema(self, schema: Dict[str, Any]) -> Dict[str, Any]:
         """Clean up JSON schema for API Gateway compatibility."""
-        # Remove $defs if present and inline them
         if '$defs' in schema:
             defs = schema.pop('$defs')
-            # Replace $ref with actual definitions
             schema = self._resolve_refs(schema, defs)
         
-        # Ensure schema has a type
         if 'type' not in schema and 'properties' in schema:
             schema['type'] = 'object'
         
