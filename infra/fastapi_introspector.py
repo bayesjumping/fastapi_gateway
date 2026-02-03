@@ -159,15 +159,19 @@ class FastAPIIntrospector:
     
     def _resolve_refs(self, obj: Any, defs: Dict[str, Any]) -> Any:
         """Resolve $ref references in schema."""
-        if isinstance(obj, dict):
-            if '$ref' in obj:
-                ref_path = obj['$ref'].split('/')[-1]
-                if ref_path in defs:
-                    return self._resolve_refs(defs[ref_path], defs)
-            return {k: self._resolve_refs(v, defs) for k, v in obj.items()}
-        elif isinstance(obj, list):
+        if isinstance(obj, list):
             return [self._resolve_refs(item, defs) for item in obj]
-        return obj
+        
+        if not isinstance(obj, dict):
+            return obj
+        
+        if '$ref' in obj:
+            ref_path = obj['$ref'].split('/')[-1]
+            if ref_path in defs:
+                return self._resolve_refs(defs[ref_path], defs)
+            return obj
+        
+        return {k: self._resolve_refs(v, defs) for k, v in obj.items()}
     
     def get_routes_by_tag(self) -> Dict[str, List[RouteInfo]]:
         """Group routes by their tags."""
