@@ -55,15 +55,17 @@ class FastAPIIntrospector:
     def _introspect(self):
         """Introspect the FastAPI application."""
         for route in self.app.routes:
-            if isinstance(route, APIRoute):
-                route_info = self._extract_route_info(route)
-                self.routes.append(route_info)
-                
-                # Collect models
-                if route_info.request_model:
-                    self.models[route_info.request_model.__name__] = route_info.request_model
-                if route_info.response_model:
-                    self._collect_response_models(route_info.response_model)
+            if not isinstance(route, APIRoute):
+                continue
+            
+            route_info = self._extract_route_info(route)
+            self.routes.append(route_info)
+            
+            # Collect models
+            if route_info.request_model:
+                self.models[route_info.request_model.__name__] = route_info.request_model
+            if route_info.response_model:
+                self._collect_response_models(route_info.response_model)
     
     def _extract_route_info(self, route: APIRoute) -> RouteInfo:
         """Extract information from an APIRoute."""
