@@ -87,6 +87,9 @@ class FastApiGatewayStack(Stack):
         print(f"📋 Found {len(self.introspector.routes)} routes")
         print(f"📦 Found {len(self.introspector.models)} models")
 
+        # Build stable parameter name mapping per parent path
+        self._param_name_by_parent = self._build_param_name_map()
+
         # Create Lambda function (single function for all routes)
         # For production: can split into multiple functions by modifying this
         self.lambda_function = self._create_lambda_function()
@@ -280,25 +283,38 @@ class FastApiGatewayStack(Stack):
                     **method_options
                 )
 
+    def _build_param_name_map(self) -> Dict[str, str]:
+        """Build a stable mapping of parent path -> parameter name."""
+        param_name_by_parent: Dict[str, str] = {}
+
+        for route in self.introspector.routes:
+            parts = [p for p in route.path.split("/") if p]
+            current_path = ""
+
+            for part in parts:
+                if part.startswith("{") and part.endswith("}"):
+                    parent_path = current_path if current_path else "/"
+                    if parent_path not in param_name_by_parent:
+                        param_name_by_parent[parent_path] = part
+                    chosen = param_name_by_parent[parent_path]
+                    current_path = f"{current_path}/{chosen}" if current_path else f"/{chosen}"
+                else:
+                    current_path = f"{current_path}/{part}" if current_path else f"/{part}"
+
+        return param_name_by_parent
+
     def _get_or_create_resource(
         self,
         path: str,
         created_resources: Dict[str, apigw.Resource]
     ) -> apigw.Resource:
         """Get or create an API Gateway resource for the given path."""
-        normalized_path = "/".join(
-            "{param}" if part.startswith("{") and part.endswith("}") else part
-            for part in path.split("/")
-            if part
-        )
-        normalized_path = f"/{normalized_path}" if normalized_path else "/"
-
-        if normalized_path in created_resources:
-            return created_resources[normalized_path]
+        if path in created_resources:
+            return created_resources[path]
 
         # Root path
-        if normalized_path == "/":
-            created_resources[normalized_path] = self.api.root
+        if path == "/" or path == "":
+            created_resources[path] = self.api.root
             return self.api.root
 
         # Split path into parts
@@ -308,13 +324,13 @@ class FastApiGatewayStack(Stack):
         current_resource = self.api.root
 
         for part in parts:
-            # Normalize path parameters to avoid sibling variable conflicts
             if part.startswith("{") and part.endswith("}"):
-                normalized_part = "{param}"
+                parent_path = current_path if current_path else "/"
+                normalized_part = self._param_name_by_parent.get(parent_path, part)
             else:
                 normalized_part = part
 
-            current_path += f"/{normalized_part}"
+            current_path = f"{current_path}/{normalized_part}" if current_path else f"/{normalized_part}"
 
             if current_path in created_resources:
                 current_resource = created_resources[current_path]
