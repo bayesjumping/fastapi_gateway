@@ -1,5 +1,8 @@
 # FastAPI to CDK Gateway
 
+[![Tests](https://github.com/bayesjumping/fastapi_gateway/actions/workflows/tests.yml/badge.svg)](https://github.com/bayesjumping/fastapi_gateway/actions/workflows/tests.yml)
+[![Coverage](https://codecov.io/gh/bayesjumping/fastapi_gateway/branch/main/graph/badge.svg)](https://codecov.io/gh/bayesjumping/fastapi_gateway)
+
 Automatically deploy your FastAPI application to AWS API Gateway with Lambda, using AWS CDK.
 
 ## Overview
