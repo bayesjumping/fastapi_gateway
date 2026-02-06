@@ -4,6 +4,9 @@ set -e
 echo "🚀 Deploying FastAPI to AWS API Gateway with CDK"
 echo "================================================"
 
+# Change to project root
+cd "$(dirname "$0")/.."
+
 # Colors for output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -32,9 +35,9 @@ echo -e "${BLUE}🔐 Checking AWS credentials...${NC}"
 if ! aws sts get-caller-identity &> /dev/null; then
     echo -e "${YELLOW}⚠️  AWS credentials not valid. Attempting SSO login...${NC}"
     echo -e "${BLUE}🔑 Logging into AWS SSO with profile: $AWS_PROFILE${NC}"
-    
+
     aws sso login --profile $AWS_PROFILE
-    
+
     # Verify credentials again
     if ! aws sts get-caller-identity &> /dev/null; then
         echo "❌ AWS SSO login failed. Please check your configuration."

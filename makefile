@@ -69,18 +69,18 @@ deploy:
 		echo "❌ Virtual environment not found. Run 'make install' first."; \
 		exit 1; \
 	fi
-	@bash ./infra/deploy.sh
+	@bash ./scripts/deploy.sh
 
 destroy:
 	@if [ ! -d "$(VENV_DIR)" ]; then \
 		echo "❌ Virtual environment not found. Run 'make install' first."; \
 		exit 1; \
 	fi
-	@bash ./infra/destroy.sh
+	@bash ./scripts/destroy.sh
 
 openapi:
 	@if [ ! -d "$(VENV_DIR)" ]; then \
 		echo "❌ Virtual environment not found. Run 'make install' first."; \
 		exit 1; \
 	fi
-	@bash ./infra/generate_openapi.sh
+	@bash ./scripts/generate_openapi.sh

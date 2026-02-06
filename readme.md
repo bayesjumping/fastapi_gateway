@@ -22,6 +22,9 @@ fastapi_gateway/
 ├── main.py              # FastAPI application entry point
 ├── app/
 │   ├── __init__.py
+│   ├── runtime/         # Lambda runtime adapter
+│   │   ├── __init__.py
+│   │   └── lambda_handler.py
 │   ├── routers/         # API route definitions
 │   │   ├── __init__.py
 │   │   └── example.py   # Example router with CRUD operations
@@ -30,10 +33,17 @@ fastapi_gateway/
 │   ├── services/        # Business logic
 │   └── db/              # Database layer
 ├── infra/               # AWS CDK infrastructure
-│   ├── cdk_app.py
-│   ├── cdk_stack.py
-│   ├── fastapi_introspector.py
-│   └── lambda_handler.py
+│   ├── app.py
+│   ├── stacks/
+│   │   └── gateway_stack.py
+│   └── introspection/
+│       └── fastapi_introspector.py
+├── build/               # Build artifacts (ignored)
+├── scripts/
+│   ├── deploy.sh         # Deployment script
+│   ├── destroy.sh        # Cleanup script
+│   ├── generate_openapi.sh # OpenAPI schema generator
+│   └── setup.sh          # Quick setup script
 ├── requirements.txt     # Python dependencies
 ├── makefile            # Build and setup commands
 └── .gitignore
@@ -100,6 +110,19 @@ make bootstrap
 
 ```bash
 make deploy
+```
+
+If you use AWS SSO, log in and pass your profile:
+
+```bash
+aws sso login --profile bayesjumping
+AWS_PROFILE=bayesjumping make deploy
+```
+
+Or call the script directly:
+
+```bash
+AWS_PROFILE=bayesjumping ./scripts/deploy.sh
 ```
 
 This single command will:
@@ -186,7 +209,7 @@ When you run `make deploy`, here's what happens:
 ```
 1. CDK starts synthesis (cdk synth)
         ↓
-2. cdk_stack.py imports main.py
+2. infra/stacks/gateway_stack.py imports main.py
         ↓
 3. FastAPIIntrospector reads the FastAPI app
         ↓
@@ -348,13 +371,13 @@ aws logs tail /aws/lambda/FastApiGatewayStack-FastApiHandler --follow
 After running the setup, you now have:
 
 ### Infrastructure Files:
-- `infra/lambda_handler.py` - Lambda entry point with Mangum
-- `infra/cdk_app.py` - CDK application entry point
-- `infra/cdk_stack.py` - Dynamic CDK stack generator
-- `infra/fastapi_introspector.py` - Route/model introspection
-- `infra/deploy.sh` - Deployment script
-- `infra/destroy.sh` - Cleanup script
-- `infra/generate_openapi.sh` - OpenAPI schema generator
+- `app/runtime/lambda_handler.py` - Lambda entry point with Mangum
+- `infra/app.py` - CDK application entry point
+- `infra/stacks/gateway_stack.py` - Dynamic CDK stack generator
+- `infra/introspection/fastapi_introspector.py` - Route/model introspection
+- `scripts/deploy.sh` - Deployment script
+- `scripts/destroy.sh` - Cleanup script
+- `scripts/generate_openapi.sh` - OpenAPI schema generator (writes to build/openapi.json)
 - `infra/requirements-lambda.txt` - Lambda runtime dependencies
 - `cdk.json` - CDK configuration
 
@@ -369,7 +392,7 @@ After running the setup, you now have:
 
 ## 🎓 Next Steps
 
-1. **Customize**: Edit `infra/cdk_stack.py` to adjust Lambda size, timeouts, etc.
+1. **Customize**: Edit `infra/stacks/gateway_stack.py` to adjust Lambda size, timeouts, etc.
 2. **Add Storage**: Replace in-memory storage with DynamoDB
 3. **Add Auth**: Implement Cognito or custom authorizers
 4. **Monitor**: Set up CloudWatch dashboards and alarms

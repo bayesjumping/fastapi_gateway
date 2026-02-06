@@ -48,6 +48,9 @@ cdk.out/
 .cdk.staging/
 cdk.context.json
 
+# OpenAPI build artifacts
+infra/openapi.json
+
 # Logs
 *.log
 

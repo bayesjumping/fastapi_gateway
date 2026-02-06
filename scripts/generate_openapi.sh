@@ -11,7 +11,10 @@ if [ -d ".venv" ]; then
     source .venv/bin/activate
 fi
 
-# Generate OpenAPI JSON from FastAPI app
-python -c "from main import app; import json; print(json.dumps(app.openapi(), indent=2))" > infra/openapi.json
+# Ensure build directory exists
+mkdir -p build
 
-echo "✅ OpenAPI schema generated at infra/openapi.json"
+# Generate OpenAPI JSON from FastAPI app
+python -c "from main import app; import json; print(json.dumps(app.openapi(), indent=2))" > build/openapi.json
+
+echo "✅ OpenAPI schema generated at build/openapi.json"
