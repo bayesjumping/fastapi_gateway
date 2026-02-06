@@ -18,12 +18,9 @@ This project automatically converts your FastAPI application into AWS infrastruc
 ```mermaid
 flowchart TD
         A[make deploy] --> B[CDK synth]
-        B --> C[Import main.py]
-        C --> D[FastAPI introspection]
-        D --> E[Generate API Gateway resources]
-        E --> F[Create Lambda bundle]
-        F --> G[Deploy CloudFormation stack]
-        G --> H[API URL + API Key output]
+        B --> C[FastAPI introspection]
+        C --> D[API Gateway + Lambda]
+        D --> E[Deploy stack]
 ```
 
 ## Project Structure
