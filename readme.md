@@ -15,6 +15,17 @@ This project automatically converts your FastAPI application into AWS infrastruc
 - ✅ Request validation from Pydantic models
 - ✅ Usage plans and throttling
 
+```mermaid
+flowchart TD
+        A[make deploy] --> B[CDK synth]
+        B --> C[Import main.py]
+        C --> D[FastAPI introspection]
+        D --> E[Generate API Gateway resources]
+        E --> F[Create Lambda bundle]
+        F --> G[Deploy CloudFormation stack]
+        G --> H[API URL + API Key output]
+```
+
 ## Project Structure
 
 ```
@@ -223,6 +234,7 @@ When you run `make deploy`, here's what happens:
         ↓
 8. Deploys to AWS
 ```
+
 
 **The magic**: No manual configuration needed! Just write FastAPI code normally.
 
