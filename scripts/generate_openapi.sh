@@ -12,9 +12,9 @@ if [ -d ".venv" ]; then
 fi
 
 # Ensure build directory exists
-mkdir -p build
+mkdir -p build/openapi
 
 # Generate OpenAPI JSON from FastAPI app
-python -c "from main import app; import json; print(json.dumps(app.openapi(), indent=2))" > build/openapi.json
+python -c "from main import app; import json; print(json.dumps(app.openapi(), indent=2))" > build/openapi/openapi.json
 
-echo "✅ OpenAPI schema generated at build/openapi.json"
+echo "✅ OpenAPI schema generated at build/openapi/openapi.json"

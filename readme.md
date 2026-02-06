@@ -377,7 +377,7 @@ After running the setup, you now have:
 - `infra/introspection/fastapi_introspector.py` - Route/model introspection
 - `scripts/deploy.sh` - Deployment script
 - `scripts/destroy.sh` - Cleanup script
-- `scripts/generate_openapi.sh` - OpenAPI schema generator (writes to build/openapi.json)
+- `scripts/generate_openapi.sh` - OpenAPI schema generator (writes to build/openapi/openapi.json)
 - `infra/requirements-lambda.txt` - Lambda runtime dependencies
 - `cdk.json` - CDK configuration
 

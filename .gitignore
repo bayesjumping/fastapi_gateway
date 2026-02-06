@@ -50,6 +50,7 @@ cdk.context.json
 
 # OpenAPI build artifacts
 infra/openapi.json
+build/openapi/
 
 # Logs
 *.log
